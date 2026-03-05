@@ -1,40 +1,61 @@
-import qrcode
-from PIL import Image
+import telebot
+from datetime import datetime
+import time
 
-# Данные вашего бота
-BOT_USERNAME = "Banali_bot"  # Имя вашего бота
+# НАСТРОЙКИ - ВСТАВЬТЕ СВОИ ДАННЫЕ
+TOKEN = '8703704685:AAG1gnukxZURXf3H-1NHfZkr8ZyGnDLr-64'
+YOUR_CHAT_ID = 8056677771
 
-# Создаем ссылку на бота
-qr_link = f"https://t.me/{BOT_USERNAME}?start=qr"
+# Создаем бота
+bot = telebot.TeleBot(TOKEN)
 
-# Настраиваем QR-код
-qr = qrcode.QRCode(
-    version=5,  # Размер (чем больше, тем детальнее)
-    box_size=15,  # Размер одного квадратика
-    border=3,  # Толщина рамки
-    error_correction=qrcode.constants.ERROR_CORRECT_H  # Высокая надежность
-)
+# Для статистики
+scan_stats = {
+    'total': 0,
+    'today': 0,
+    'users': set(),
+    'last_scan': None
+}
 
-qr.add_data(qr_link)
-qr.make(fit=True)
+current_date = datetime.now().strftime("%Y-%m-%d")
 
-# Создаем изображение
-img = qr.make_image(fill_color="black", back_color="white")
+@bot.message_handler(commands=['start'])
+def handle_start(message):
+    global scan_stats, current_date
+    
+    today = datetime.now().strftime("%Y-%m-%d")
+    if today != current_date:
+        current_date = today
+        scan_stats['today'] = 0
 
-# Сохраняем
-filename = f"qr_{BOT_USERNAME}.png"
-img.save(filename)
+    user = message.from_user
+    args = message.text.split()
+    source = "🔵 QR-код" if len(args) > 1 and args[1] == "qr" else "⚪ Прямая ссылка"
+    scan_time = datetime.now().strftime("%H:%M:%S")
 
-print("=" * 50)
-print("✅ QR-код создан!")
-print("=" * 50)
-print(f"📱 Имя бота: @{BOT_USERNAME}")
-print(f"🔗 Ссылка в QR: {qr_link}")
-print(f"🖼 Файл: {filename}")
-print("=" * 50)
-print("\n🎯 Этот QR-код можно:")
-print("   • Распечатать на визитках")
-print("   • Вставить в презентацию")
-print("   • Наклеить на товары")
-print("   • Отправить друзьям")
-print("=" * 50)
+    scan_stats['total'] += 1
+    scan_stats['today'] += 1
+    scan_stats['users'].add(user.id)
+
+    # Уведомление вам
+    notification = f"🔔 СКАНИРОВАНИЕ!\n{source}\n👤 {user.first_name}\n📊 Всего: {scan_stats['total']}"
+    try:
+        bot.send_message(YOUR_CHAT_ID, notification)
+    except:
+        pass
+
+    # Ответ пользователю
+    bot.send_message(message.chat.id, f"👋 Привет, {user.first_name}!\n✅ Спасибо за сканирование!")
+
+@bot.message_handler(func=lambda message: True)
+def echo_all(message):
+    if message.from_user.id == YOUR_CHAT_ID:
+        bot.send_message(message.chat.id, "✅ Ок")
+    else:
+        bot.send_message(message.chat.id, "Отправь /start")
+
+if __name__ == "__main__":
+    print("🤖 БОТ ЗАПУЩЕН!")
+    print(f"👤 Владелец ID: {YOUR_CHAT_ID}")
+    print("📢 Ожидание сканирований...")
+    bot.infinity_polling()

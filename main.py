@@ -52,7 +52,7 @@ def handle_start(message):
     scan_stats['users'].add(user.id)
     scan_stats['last_scan'] = f"{today} {scan_time}"
 
-    # КРАСИВОЕ УВЕДОМЛЕНИЕ ДЛЯ ВАС (точно как вы показали)
+    # КРАСИВОЕ УВЕДОМЛЕНИЕ ДЛЯ ВАС
     notification = (
         "🔔 **НОВОЕ СКАНИРОВАНИЕ QR!**\n"
         "═══════════════════════\n"
@@ -86,6 +86,27 @@ def handle_start(message):
     # Логируем в консоль
     print(f"\n[{scan_time}] {source}")
     print(f"   Пользователь: @{user.username or 'нет'} ({user.first_name})")
+
+@bot.message_handler(commands=['test'])
+def test_notification(message):
+    """Тестовая команда для проверки уведомлений"""
+    # Отправляем тестовое уведомление админу
+    try:
+        bot.send_message(YOUR_CHAT_ID, "🧪 **ТЕСТОВОЕ УВЕДОМЛЕНИЕ**\nЕсли вы это видите - всё работает!", parse_mode='Markdown')
+        bot.send_message(message.chat.id, "✅ Тестовое уведомление отправлено!")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"❌ Ошибка: {e}")
+
+@bot.message_handler(commands=['myid'])
+def show_my_id(message):
+    """Показать ID текущего пользователя"""
+    bot.send_message(
+        message.chat.id,
+        f"🆔 Ваш Chat ID: `{message.from_user.id}`\n"
+        f"🆔 ID в коде: `{YOUR_CHAT_ID}`\n"
+        f"✅ Совпадают: {'ДА' if message.from_user.id == YOUR_CHAT_ID else 'НЕТ'}",
+        parse_mode='Markdown'
+    )
 
 @bot.message_handler(commands=['stats'])
 def show_stats(message):
